@@ -1,0 +1,25 @@
+{
+    "server": {
+        "address": "0.0.0.0:8080",
+        "mode": "debug",
+        "secret": "にじげん"
+    },
+    "database": {
+        "user": "root",
+        "password": "password",
+        "host": "127.0.0.1:3306",
+        "name": "gocomic"
+    },
+    "download": {
+        "address": "127.0.0.1:7700",
+        "path": "~/Comics"
+    },
+    "pagination": {
+        "limit": "30",
+        "page": "1"
+    },
+    "cron": {
+        "update": "@every 6h",
+        "clean": "@daily"
+    }
+}

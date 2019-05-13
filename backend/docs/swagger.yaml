@@ -1,0 +1,289 @@
+basePath: '{{.BasePath}}'
+definitions:
+  routers.Login:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  routers.Register:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  routers.Response:
+    properties:
+      code:
+        type: integer
+      data:
+        type: object
+      msg:
+        type: string
+    type: object
+  routers.Subscribe:
+    properties:
+      comic:
+        type: string
+      website:
+        type: string
+    required:
+    - comic
+    - website
+    type: object
+  routers.Unsubscribe:
+    properties:
+      id:
+        type: integer
+    required:
+    - id
+    type: object
+host: 127.0.0.1:8080
+info:
+  contact: {}
+  description: This is a comic server.
+  license: {}
+  title: gocomic api
+  version: "1.0"
+paths:
+  /api/v1/comics:
+    delete:
+      parameters:
+      - description: comic id
+        in: body
+        name: subscribe
+        required: true
+        schema:
+          $ref: '#/definitions/routers.Unsubscribe'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Unsubscribe the comic
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Get all subscribed comics by current user
+    post:
+      parameters:
+      - description: website and comic
+        in: body
+        name: subscribe
+        required: true
+        schema:
+          $ref: '#/definitions/routers.Subscribe'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Subscribe a comic
+  /api/v1/comics/{id}:
+    get:
+      parameters:
+      - description: comic id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: page limit
+        in: query
+        name: limit
+        type: integer
+      - description: page number
+        in: query
+        name: page
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Get the comic
+    patch:
+      parameters:
+      - description: comic id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "204":
+          description: No Content
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Update the chapter list of the comic
+  /api/v1/comics/{id}/{cid}:
+    get:
+      parameters:
+      - description: comic id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: chapter index
+        in: path
+        name: cid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Get the chapter
+  /login:
+    post:
+      parameters:
+      - description: email and password
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/routers.Login'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Login
+  /logout:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Logout
+  /register:
+    post:
+      parameters:
+      - description: username, email and password
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/routers.Register'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/routers.Response'
+            type: object
+      summary: Register
+swagger: "2.0"
