@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fancxxy/gocomic/download/network"
@@ -18,18 +17,32 @@ import (
 var javascript = `
 	function Base() {
 		_keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-		this.decode = function (c) {
+		this.decode = function(c) {
 			var a = "", b, d, h, f, g, e = 0;
-
-			for (c = c.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-				e < c.length;
-			)b = _keyStr.indexOf(c.charAt(e++)), d = _keyStr.indexOf(c.charAt(e++)), f = _keyStr.indexOf(c.charAt(e++)), g = _keyStr.indexOf(c.charAt(e++)), b = b << 2 | d >> 4, d = (d & 15) << 4 | f >> 2, h = (f & 3) << 6 | g, a += String.fromCharCode(b), 64 != f && (a += String.fromCharCode(d)), 64 != g && (a += String.fromCharCode(h));
+			for (c = c.replace(/[^A-Za-z0-9\+\/\=]/g, ""); e < c.length; )
+				b = _keyStr.indexOf(c.charAt(e++)),
+				d = _keyStr.indexOf(c.charAt(e++)),
+				f = _keyStr.indexOf(c.charAt(e++)),
+				g = _keyStr.indexOf(c.charAt(e++)),
+				b = b << 2 | d >> 4,
+				d = (d & 15) << 4 | f >> 2,
+				h = (f & 3) << 6 | g,
+				a += String.fromCharCode(b),
+				64 != f && (a += String.fromCharCode(d)),
+				64 != g && (a += String.fromCharCode(h));
 			return a = _utf8_decode(a)
-		};
-		_utf8_decode = function (c) {
-			for (var a = "", b = 0, d = c1 = c2 = 0;
-				b < c.length;
-			)d = c.charCodeAt(b), 128 > d ? (a += String.fromCharCode(d), b++) : 191 < d && 224 > d ? (c2 = c.charCodeAt(b + 1), a += String.fromCharCode((d & 31) << 6 | c2 & 63), b += 2) : (c2 = c.charCodeAt(b + 1), c3 = c.charCodeAt(b + 2), a += String.fromCharCode((d & 15) << 12 | (c2 & 63) << 6 | c3 & 63), b += 3);
+		}
+		;
+		_utf8_decode = function(c) {
+			for (var a = "", b = 0, d = c1 = c2 = 0; b < c.length; )
+				d = c.charCodeAt(b),
+				128 > d ? (a += String.fromCharCode(d),
+				b++) : 191 < d && 224 > d ? (c2 = c.charCodeAt(b + 1),
+				a += String.fromCharCode((d & 31) << 6 | c2 & 63),
+				b += 2) : (c2 = c.charCodeAt(b + 1),
+				c3 = c.charCodeAt(b + 2),
+				a += String.fromCharCode((d & 15) << 12 | (c2 & 63) << 6 | c3 & 63),
+				b += 3);
 			return a
 		}
 	}
@@ -38,7 +51,7 @@ var javascript = `
 		return true
 	}
 
-	var window = new Object(); 
+	var window = new Object();
 	window.Array = 1
 
 	var document = new Object();
@@ -46,8 +59,7 @@ var javascript = `
 	document.getElementsByTagName = get
 	document.getElementsById = get
 	document.getElementssByName = get
-
-	%s 
+	%s
 	%s
 
 	var B = new Base(), T = DATA.split(''), N = window['nonce'], len, locate, str;
@@ -93,8 +105,8 @@ func newTencent() *tencent {
 		"title":    ".works-intro-title > strong:nth-child(1)",
 		"chapters": "#chapter",
 		"chapter":  ".works-chapter-item",
-		"nonce":    "body > script:nth-child(15)",
-		"data":     "body > script:nth-child(30)",
+		"nonce":    "body > script:nth-child(13)",
+		"data":     "body > script:nth-child(28)",
 		"summary":  ".works-intro-short",
 		"cover":    ".works-cover > a:nth-child(1)",
 		"search":   ".mod_book_name",
@@ -203,61 +215,6 @@ func (t *tencent) Less(title1, title2 string) bool {
 	return num1 < num2
 }
 
-func (t *tencent) Download(queue chan map[string]string, print chan string) (map[string]string, error) {
-	var wg sync.WaitGroup
-	var errors []string
-
-	var syncMap sync.Map
-	wg.Add(guard)
-	for i := 0; i < guard; i++ {
-		go func() {
-			defer wg.Done()
-			for {
-				picture, ok := <-queue
-				if !ok {
-					return
-				}
-
-				if _, ok := picture["print"]; ok {
-					print <- fmt.Sprintf("  %s: %-20s ==> %s", picture["title"], picture["ctitle"], picture["path"])
-					continue
-				}
-
-				url := picture["url"]
-				referer := picture["curl"]
-				response, err := t.request.Get(url, network.Header{
-					"Referer": referer,
-				})
-				if err != nil {
-					errors = append(errors, fmt.Sprintf("%s", url))
-				}
-
-				filename := url[strings.LastIndex(url, "_")+1 : len(url)-2]
-				wholename := filepath.Join(picture["filepath"], filename)
-				err = response.ToFile(wholename)
-				if err != nil {
-					errors = append(errors, fmt.Sprintf("%s", url))
-				}
-				syncMap.Store(filename, wholename)
-			}
-		}()
-	}
-
-	wg.Wait()
-	close(print)
-
-	var resources = make(map[string]string)
-	syncMap.Range(func(k, v interface{}) bool {
-		resources[k.(string)] = v.(string)
-		return true
-	})
-
-	if len(errors) != 0 {
-		return resources, fmt.Errorf("missing: [%s]", strings.Join(errors, ", "))
-	}
-	return resources, nil
-}
-
 func (t *tencent) Search(title string) (string, error) {
 	query := t.search + url.QueryEscape(title)
 	var URL string
@@ -283,6 +240,10 @@ func (t *tencent) Search(title string) (string, error) {
 		return "", fmt.Errorf("cannot find comic %s", title)
 	}
 	return URL, nil
+}
+
+func (t *tencent) Filename(url string) string {
+	return url[strings.LastIndex(url, "_")+1 : len(url)-2]
 }
 
 func (t *tencent) getChapterNum(title string) int {

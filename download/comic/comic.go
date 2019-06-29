@@ -6,13 +6,16 @@ import (
 	"os/user"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/fancxxy/gocomic/download/network"
 	"github.com/fancxxy/gocomic/download/parser"
 )
 
-var home string
+var (
+	home string
+)
 
 const (
 	guard = 5
@@ -214,7 +217,7 @@ func (c *Comic) DownloadInCmd(nums ...int) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		c.parser.Download(pictureQueue, printQueue)
+		download(pictureQueue, printQueue, guard*4, c.parser.Filename)
 	}()
 
 	wg.Add(1)
@@ -342,4 +345,69 @@ func (c *Comic) Download(nums ...int) map[string]error {
 	}
 
 	return errs
+}
+
+func download(queue chan map[string]string, print chan string, guard int, filename func(string) string) (map[string]string, error) {
+	var (
+		wg      sync.WaitGroup
+		syncMap sync.Map
+		errors  []string
+		request = network.New()
+	)
+
+	wg.Add(guard)
+	for i := 0; i < guard; i++ {
+		go func() {
+			defer wg.Done()
+			for {
+				picture, ok := <-queue
+				if !ok {
+					return
+				}
+
+				if _, ok := picture["print"]; ok {
+					// var (
+					// 	buffer bytes.Buffer
+					// 	output = tabwriter.NewWriter(&buffer, 25, 0, 0, ' ', tabwriter.AlignRight)
+					// )
+					// fmt.Fprintf(output, "  %s: %s\t ==> %s", picture["title"], picture["ctitle"], picture["path"])
+					// output.Flush()
+					// print <- buffer.String()
+					print <- fmt.Sprintf("  %s: %s ==> %s", picture["title"], picture["ctitle"], picture["path"])
+					continue
+				}
+
+				url := picture["url"]
+				referer := picture["curl"]
+				response, err := request.Get(url, network.Header{
+					"Referer": referer,
+				})
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s", url))
+				}
+
+				name := filename(url)
+				wholename := filepath.Join(picture["filepath"], name)
+				err = response.ToFile(wholename)
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s", url))
+				}
+				syncMap.Store(name, wholename)
+			}
+		}()
+	}
+
+	wg.Wait()
+	close(print)
+
+	var resources = make(map[string]string)
+	syncMap.Range(func(k, v interface{}) bool {
+		resources[k.(string)] = v.(string)
+		return true
+	})
+
+	if len(errors) != 0 {
+		return resources, fmt.Errorf("missing: [%s]", strings.Join(errors, ", "))
+	}
+	return resources, nil
 }

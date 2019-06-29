@@ -7,25 +7,31 @@ import (
 
 // Parser is the interface to wrap website methods
 type Parser interface {
-	Comic(url string) (map[string]interface{}, error)
+	// Chapter parse chapter page
 	Chapter(url string) (map[string]interface{}, error)
-	Download(chan map[string]string, chan string) (map[string]string, error)
-	Search(string) (string, error)
-	Less(string, string) bool
-	Match(int, string) bool
+	// Comic parse comic main page return useful information
+	Comic(url string) (map[string]interface{}, error)
+	// Filename get picture name from url
+	Filename(string) string
+	// Label return name + domain
 	Label() string
+	// Less compare two chapters' title
+	Less(string, string) bool
+	// Match check chapter title match input index or not
+	Match(int, string) bool
+	// Search search title in website and return the url of matched comic
+	Search(string) (string, error)
 }
-
-const guard = 20
 
 var instances = make(map[string]Parser)
 
 func init() {
 	tencent := newTencent()
+	// Label is 腾讯动漫: https://ac.qq.com/
 	instances[tencent.Label()] = tencent
 }
 
-// GetParser find the Parser using input parameter, it can be Parser's name or domain
+// GetParser find the Parser using input parameter, parameter can be Parser's name or domain
 func GetParser(v string) Parser {
 	var name, domain string
 	u, err := url.Parse(v)

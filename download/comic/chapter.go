@@ -89,5 +89,5 @@ func (c *Chapter) Download() (map[string]string, error) {
 	}()
 
 	print := make(chan string)
-	return c.parser.Download(queue, print)
+	return download(queue, print, guard*4, c.parser.Filename)
 }

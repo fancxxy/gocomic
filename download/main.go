@@ -28,14 +28,14 @@ func main() {
 		os.Exit(0)
 	}
 
-	if *serve == false && (*website == "" || *comic == "") {
-		fmt.Printf("website and comic are mandatory\n")
-		os.Exit(-1)
-	}
-
 	if *serve {
 		rpc.Start()
 		os.Exit(0)
+	}
+
+	if *website == "" || *comic == "" {
+		fmt.Printf("website and comic are mandatory\n")
+		os.Exit(-1)
 	}
 
 	var chapters []int
@@ -54,7 +54,7 @@ func main() {
 	url, err := comics.SearchComic(*website, *comic)
 	if url == "" {
 		fmt.Printf("search %s in %s error: %v\n", *comic, *website, err)
-		os.Exit(0)
+		os.Exit(-1)
 	}
 
 	instance, err := comics.NewComic(url)
