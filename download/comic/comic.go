@@ -384,6 +384,7 @@ func download(queue chan map[string]string, print chan string, guard int, filena
 				})
 				if err != nil {
 					errors = append(errors, fmt.Sprintf("%s", url))
+					continue
 				}
 
 				name := filename(url)
@@ -391,6 +392,7 @@ func download(queue chan map[string]string, print chan string, guard int, filena
 				err = response.ToFile(wholename)
 				if err != nil {
 					errors = append(errors, fmt.Sprintf("%s", url))
+					continue
 				}
 				syncMap.Store(name, wholename)
 			}

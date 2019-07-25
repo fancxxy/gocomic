@@ -29,7 +29,9 @@ func main() {
 	}
 
 	if *serve {
-		rpc.Start()
+		if err := rpc.Start(); err != nil {
+			fmt.Println(err)
+		}
 		os.Exit(0)
 	}
 

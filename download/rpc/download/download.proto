@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package download;
+
+message ComicRequest {
+    string website = 1; // website name
+    string comic = 2;   // comic title
+}
+
+message ComicResponse {
+    string url = 1;   
+    string title = 2;
+    string summary = 3;
+    string cover = 4;
+    map<string,string> chapters = 5;
+    repeated string indexes = 6;
+    string latest = 7;
+    string source = 8;
+}
+
+message ChapterRequest {
+    string chapter = 1; // chapter url
+    string path = 2;    // download path
+}
+
+message ChapterResponse {
+    string url = 1;   
+    string title = 2;
+    string ctitle = 3;
+    map<string,string> pictures = 4;
+}
+
+message UpdateRequest {
+    string comic = 1;   // comic url
+    string latest = 2;  // latest chapter title
+}
+
+message UpdateResponse {
+    map<string,string> chapters = 1;
+    repeated string indexes = 2;
+    string latest = 3;
+}
+
+service Download {
+    // get comics info
+    rpc Comic(stream ComicRequest) returns (stream ComicResponse);
+    // download chapters resource
+    rpc Chapter(stream ChapterRequest) returns (stream ChapterResponse);
+    // get chapters after the provided chapter
+    rpc Update(stream UpdateRequest) returns (stream UpdateResponse);
+}
+
+// protoc -I download/rpc/download --go_out=plugins=grpc:download/rpc/download download/rpc/download/download.proto 
