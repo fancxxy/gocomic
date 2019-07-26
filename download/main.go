@@ -20,6 +20,7 @@ func main() {
 	path := flag.String("path", "", "set download directory")
 	latest := flag.Bool("latest", false, "check the latest updated chapter")
 	serve := flag.Bool("serve", false, "start rpc server")
+	debug := flag.Bool("debug", false, "debug rpc server")
 
 	flag.Parse()
 
@@ -29,7 +30,7 @@ func main() {
 	}
 
 	if *serve {
-		if err := rpc.Start(); err != nil {
+		if err := rpc.Start(*debug); err != nil {
 			fmt.Println(err)
 		}
 		os.Exit(0)
@@ -86,7 +87,7 @@ func main() {
 }
 
 func h() {
-	fmt.Printf("Usage: gocomic [-website -comic [-chapter...] [-latest] [-path]] [-serve]\n\n")
+	fmt.Printf("Usage: gocomic [-website -comic [-chapter...] [-latest] [-path]] [-serve -debug]\n\n")
 	fmt.Printf("gocomic is a command line tool to download specific comic or chapter resources\n\n")
 	fmt.Printf("Support website:\n")
 	for _, label := range parser.Support() {

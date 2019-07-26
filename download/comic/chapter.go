@@ -88,6 +88,6 @@ func (c *Chapter) Download() (map[string]string, error) {
 		close(queue)
 	}()
 
-	print := make(chan string)
+	print := make(chan string, 1)
 	return download(queue, print, guard*4, c.parser.Filename)
 }

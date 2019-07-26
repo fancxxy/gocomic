@@ -68,7 +68,12 @@ func NewComic(url string) (*Comic, error) {
 
 	comic.initialize(values)
 	comic.sort()
+
+	if len(comic.Ctitles) < 1 {
+		return nil, fmt.Errorf("chapter list is empty")
+	}
 	comic.Latest = comic.Ctitles[len(comic.Ctitles)-1]
+
 	return comic, nil
 }
 
@@ -366,13 +371,6 @@ func download(queue chan map[string]string, print chan string, guard int, filena
 				}
 
 				if _, ok := picture["print"]; ok {
-					// var (
-					// 	buffer bytes.Buffer
-					// 	output = tabwriter.NewWriter(&buffer, 25, 0, 0, ' ', tabwriter.AlignRight)
-					// )
-					// fmt.Fprintf(output, "  %s: %s\t ==> %s", picture["title"], picture["ctitle"], picture["path"])
-					// output.Flush()
-					// print <- buffer.String()
 					print <- fmt.Sprintf("  %s: %s ==> %s", picture["title"], picture["ctitle"], picture["path"])
 					continue
 				}
