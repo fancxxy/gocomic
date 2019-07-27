@@ -79,7 +79,8 @@ type pictures struct {
 		Title string `json:"title"`
 	} `json:"comic"`
 	Chapter struct {
-		Ctitle string `json:"cTitle"`
+		Ctitle  string `json:"cTitle"`
+		CanRead bool   `json:"canRead"`
 	} `json:"chapter"`
 	Picture []struct {
 		URL string `json:"url"`
@@ -191,6 +192,13 @@ func (t *tencent) Chapter(url string) (map[string]interface{}, error) {
 
 	var pics pictures
 	err = json.Unmarshal([]byte(value.String()), &pics)
+	if err != nil {
+		return results, err
+	}
+
+	if !pics.Chapter.CanRead {
+		return results, fmt.Errorf("no permission to access the vip chapter resource")
+	}
 
 	var urls []string
 	for _, picture := range pics.Picture {
