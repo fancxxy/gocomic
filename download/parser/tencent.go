@@ -106,11 +106,12 @@ func newTencent() *tencent {
 		"title":    ".works-intro-title > strong:nth-child(1)",
 		"chapters": "#chapter",
 		"chapter":  ".works-chapter-item",
-		"nonce":    "body > script:nth-child(13)",
-		"data":     "body > script:nth-child(28)",
+		"nonce":    "body > script:nth-child(12)",
+		"data":     "body > script:nth-child(27)",
 		"summary":  ".works-intro-short",
 		"cover":    ".works-cover > a:nth-child(1)",
 		"search":   ".mod_book_name",
+		"update":   ".subscribe-wrap > ul:nth-child(1) > li:nth-child(2) > span:nth-child(3)",
 	}
 	urlRegex, _ := regexp.Compile(`ac.qq.com/Comic/comicInfo/id/\d+`)
 	curlRegex, _ := regexp.Compile(`ac.qq.com/ComicView/index/id/\d+/cid/\d+`)
@@ -152,7 +153,7 @@ func (t *tencent) Comic(url string) (map[string]interface{}, error) {
 	})
 	cover, _ := doc.Find(t.cssSelector["cover"]).Find("img").Attr("src")
 	summary := strings.Trim(doc.Find(t.cssSelector["summary"]).Text(), "\n ")
-	date := doc.Find(t.cssSelector["update"]).Find(".ui-pl10").Text()
+	date := doc.Find(t.cssSelector["update"]).Text()
 
 	results["title"] = title
 	results["cover"] = cover
