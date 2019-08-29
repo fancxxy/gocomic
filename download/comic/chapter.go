@@ -89,5 +89,11 @@ func (c *Chapter) Download() (map[string]string, error) {
 	}()
 
 	print := make(chan string, 1)
-	return download(queue, print, guard*4, c.parser.Filename)
+	resources := download(queue, print, guard*4, c.parser)
+
+	if len(resources) != len(c.pictures) {
+		return resources, fmt.Errorf("missing pictures")
+	}
+
+	return resources, nil
 }

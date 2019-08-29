@@ -6,7 +6,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/fancxxy/gocomic/download/network"
@@ -154,15 +153,26 @@ func (c *Comic) curls(nums ...int) []string {
 		}
 	}
 
-	sortTitle(titles, c.parser)
 	for _, title := range titles {
 		urls = append(urls, c.Chapters[title])
 	}
 	return urls
 }
 
+func (c *Comic) Less(i, j int) bool {
+	return c.parser.Less(c.Ctitles[i], c.Ctitles[j])
+}
+
+func (c *Comic) Len() int {
+	return len(c.Ctitles)
+}
+
+func (c *Comic) Swap(i, j int) {
+	c.Ctitles[i], c.Ctitles[j] = c.Ctitles[j], c.Ctitles[i]
+}
+
 func (c *Comic) sort() {
-	sortTitle(c.Ctitles, c.parser)
+	sort.Sort(c)
 }
 
 // DownloadCover download cover image to disk
@@ -206,8 +216,8 @@ func (c *Comic) DownloadCover(s ...float64) error {
 	return nil
 }
 
-// DownloadInCmd download resource to disk
-func (c *Comic) DownloadInCmd(nums ...int) {
+// Download download resource to disk
+func (c *Comic) Download(nums ...int) {
 	var wg sync.WaitGroup
 
 	urls := c.curls(nums...)
@@ -222,7 +232,7 @@ func (c *Comic) DownloadInCmd(nums ...int) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		download(pictureQueue, printQueue, guard*4, c.parser.Filename)
+		download(pictureQueue, printQueue, guard*4, c.parser)
 	}()
 
 	wg.Add(1)
@@ -284,7 +294,9 @@ func (c *Comic) DownloadInCmd(nums ...int) {
 		close(pictureQueue)
 	}()
 
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for _, url := range urls {
 			urlQueue <- url
 		}
@@ -294,69 +306,10 @@ func (c *Comic) DownloadInCmd(nums ...int) {
 	wg.Wait()
 }
 
-// Download download resource to disk, return all errors
-func (c *Comic) Download(nums ...int) map[string]error {
-	errs := make(map[string]error)
-
-	urls := c.curls(nums...)
-	if len(urls) == 0 {
-		return errs
-	}
-
-	type result struct {
-		url string
-		err error
-	}
-
-	urlTitleMap := make(map[string]string)
-	for title, url := range c.Chapters {
-		urlTitleMap[url] = title
-	}
-
-	urlQueue := make(chan string, guard)
-	resultQueue := make(chan *result, guard)
-
-	for i := 0; i < guard; i++ {
-		go func() {
-			for {
-				url, ok := <-urlQueue
-				if !ok {
-					return
-				}
-				chapter, err := NewChapter(url)
-				if err != nil {
-					resultQueue <- &result{url, err}
-				} else {
-					chapter.home = c.home
-					_, err = chapter.Download()
-					resultQueue <- &result{url, err}
-				}
-			}
-		}()
-	}
-
-	go func() {
-		for _, url := range urls {
-			urlQueue <- url
-		}
-		close(urlQueue)
-	}()
-
-	for i := 0; i < len(urls); i++ {
-		result, ok := <-resultQueue
-		if ok && result.err != nil {
-			errs[urlTitleMap[result.url]] = result.err
-		}
-	}
-
-	return errs
-}
-
-func download(queue chan map[string]string, print chan string, guard int, filename func(string) string) (map[string]string, error) {
+func download(queue chan map[string]string, print chan string, guard int, parser parser.Parser) map[string]string {
 	var (
 		wg      sync.WaitGroup
 		syncMap sync.Map
-		errors  []string
 		request = network.New()
 	)
 
@@ -381,15 +334,13 @@ func download(queue chan map[string]string, print chan string, guard int, filena
 					"Referer": referer,
 				})
 				if err != nil {
-					errors = append(errors, fmt.Sprintf("%s", url))
 					continue
 				}
 
-				name := filename(url)
+				name := parser.Filename(url)
 				wholename := filepath.Join(picture["filepath"], name)
 				err = response.ToFile(wholename)
 				if err != nil {
-					errors = append(errors, fmt.Sprintf("%s", url))
 					continue
 				}
 				syncMap.Store(name, wholename)
@@ -406,8 +357,5 @@ func download(queue chan map[string]string, print chan string, guard int, filena
 		return true
 	})
 
-	if len(errors) != 0 {
-		return resources, fmt.Errorf("missing: [%s]", strings.Join(errors, ", "))
-	}
-	return resources, nil
+	return resources
 }

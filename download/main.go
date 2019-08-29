@@ -54,13 +54,13 @@ func main() {
 		}
 	}
 
-	url, err := comics.SearchComic(*website, *comic)
-	if url == "" {
+	u, err := comics.SearchComic(*website, *comic)
+	if u == "" {
 		fmt.Printf("search %s in %s error: %v\n", *comic, *website, err)
 		os.Exit(-1)
 	}
 
-	instance, err := comics.NewComic(url)
+	instance, err := comics.NewComic(u)
 	if err != nil {
 		fmt.Printf("get comic %s information error: %v\n", *comic, err)
 		os.Exit(-1)
@@ -82,7 +82,7 @@ func main() {
 		}
 	}
 
-	instance.DownloadInCmd(chapters...)
+	instance.Download(chapters...)
 	fmt.Printf("finished\n")
 }
 

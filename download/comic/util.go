@@ -8,9 +8,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"sort"
-
-	"github.com/fancxxy/gocomic/download/parser"
 )
 
 func resolvePath(paths []string) (string, error) {
@@ -68,26 +65,4 @@ func clipCover(in io.Reader, out io.Writer, scale float64) error {
 	default:
 		return fmt.Errorf("not support image format")
 	}
-}
-
-type titles struct {
-	data   []string
-	parser parser.Parser
-}
-
-func (t titles) Less(i, j int) bool {
-	return t.parser.Less(t.data[i], t.data[j])
-}
-
-func (t titles) Len() int {
-	return len(t.data)
-}
-
-func (t titles) Swap(i, j int) {
-	t.data[i], t.data[j] = t.data[j], t.data[i]
-}
-
-func sortTitle(data []string, parser parser.Parser) {
-	ts := titles{parser: parser, data: data}
-	sort.Sort(ts)
 }
